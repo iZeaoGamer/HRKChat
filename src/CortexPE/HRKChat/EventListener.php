@@ -38,6 +38,7 @@ use CortexPE\HRKChat\exception\UnresolvedPlaceholderException;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\Player;
+use pocketmine\Server;
 
 class EventListener implements Listener {
 	/** @var HRKChat */
@@ -56,7 +57,12 @@ class EventListener implements Listener {
 		$this->hrk = $plugin->getServer()->getPluginManager()->getPlugin("Hierarchy");
 		$this->chatFormats = $config["chatFormat"];
 		$this->nameTagFormats = $config["nameTagFormat"];
+		$this->factionsPro = $this->getServer()->getPluginManager()->getPlugin("FactionsPro");
 	}
+	public function getAPI()
+    {
+        return Server::getInstance()->getPluginManager()->getPlugin("FactionsPro");
+    }
 
 	/**
 	 * @param MemberRoleUpdateEvent $ev
@@ -98,6 +104,40 @@ class EventListener implements Listener {
 		));
 	}
 
+	    /**
+     * @param Player $player
+     * @return string
+     */
+    public function getPlayerFaction(Player $player)
+    {
+        return $this->getAPI()->getFaction($player->getName());
+    }
+
+    /**
+     * @param Player $player
+     * @return string
+     */
+    public function getPlayerRank(Player $player)
+    {
+        if($this->getAPI()->isInFaction($player->getName()))
+        {
+            if($this->getAPI()->isOfficer($player->getName())) {
+                return '*';
+            }
+            elseif($this->getAPI()->isLeader($player->getName()))
+            {
+                return '**';
+            }
+            else
+            {
+                return '';
+            }
+        }
+
+        // TODO
+        return '';
+    }
+}
 	private function resolveFormat(BaseMember $member, array $formatList): string {
 		if($this->defaultRoleID === null) {
 			$this->defaultRoleID = $this->hrk->getRoleManager()->getDefaultRole()->getId();
@@ -127,5 +167,10 @@ class EventListener implements Listener {
 		if($ev->getPlaceholderName() === "hrk.displayName") {
 			$ev->setValue($ev->getMember()->getPlayer()->getDisplayName());
 		}
+		if($ev->getPlaceHolderName() === "{fac_name}"){
+  $ev->setValue($this->getPlayerFaction($ev->getMember()->getPlayer()));
+		}
+if($ev->getPlaceHolderName() === "{fac_rank}"){
+$ev->setValue($this->getPlayerRank($ev->getMember()->getPlayer()));
 	}
 }
